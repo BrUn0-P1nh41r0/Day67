@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for
+from flask import Flask, render_template, redirect, url_for, request
 from flask_bootstrap import Bootstrap5
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -12,6 +12,7 @@ from datetime import date
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
 Bootstrap5(app)
+ckeditor = CKEditor(app)
 
 # CREATE DATABASE
 class Base(DeclarativeBase):
@@ -35,22 +36,32 @@ class BlogPost(db.Model):
 with app.app_context():
     db.create_all()
 
-
 @app.route('/')
 def get_all_posts():
-    # TODO: Query the database for all the posts. Convert the data to a python list.
-    posts = []
+    posts = BlogPost.query.all()
     return render_template("index.html", all_posts=posts)
 
-# TODO: Add a route so that you can click on individual posts.
-@app.route('/')
+@app.route('/post/<int:post_id>')
 def show_post(post_id):
-    # TODO: Retrieve a BlogPost from the database based on the post_id
-    requested_post = "Grab the post from your database"
+    requested_post = BlogPost.query.get(post_id)
     return render_template("post.html", post=requested_post)
 
+@app.route("/new-post", methods=["GET", "POST"])
+def add_new_post():
+    if request.method == "POST":
+        new_post = BlogPost(
+            title=request.form["title"],
+            subtitle=request.form["subtitle"],
+            body=request.form["body"],
+            img_url=request.form["img_url"],
+            author=request.form["author"],
+            date=date.today().strftime("%B %d %Y")
+        )
+        db.session.add(new_post)
+        db.session.commit()
+        return redirect(url_for("get_all_posts"))
+    return render_template("make-post.html")
 
-# TODO: add_new_post() to create a new blog post
 
 # TODO: edit_post() to change an existing blog post
 
