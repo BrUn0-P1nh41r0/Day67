@@ -57,7 +57,6 @@ def get_all_posts():
 
 @app.route("/post/<int:post_id>")
 def show_post(post_id):
-    # TODO: Retrieve a BlogPost from the database based on the post_id
     requested_post = db.get_or_404(BlogPost, post_id)
     return render_template("post.html", post=requested_post)
 
@@ -79,10 +78,35 @@ def add_new_post():
         return redirect(url_for("get_all_posts"))
     return render_template("make-post.html", form=form)
 
-@app.route("/edit-post/<post-id>")
-def edit_post():
+@app.route("/edit-post/<int:post_id>", methods=["GET", "POST"])
+def edit_post(post_id):
+    post = db.get_or_404(BlogPost, post_id)
+    form = CreatePostForm(
+        title=post.title,
+        subtitle=post.subtitle,
+        img_url=post.img_url,
+        author=post.author,
+        body=post.body
+    )
 
-    return
+    if form.validate_on_submit():
+        post.title = form.title.data
+        post.subtitle = form.subtitle.data
+        post.img_url = form.img_url.data
+        post.author = form.author.data
+        post.body = form.body.data
+
+        db.session.commit()
+        return redirect(url_for("show_post", post_id=post.id))
+
+    return render_template("make-post.html", form=form)
+
+@app.route("/delete/<int:post_id>")
+def delete_post(post_id):
+    post_to_delete = db.get_or_404(BlogPost, post_id)
+    db.session.delete(post_to_delete)
+    db.session.commit()
+    return redirect(url_for('get_all_posts'))
 
 # Below is the form previous lessons. No changes needed.
 @app.route("/about")
